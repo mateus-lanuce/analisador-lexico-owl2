@@ -1,5 +1,11 @@
 # Projeto de Compiladores
 
+## como rodar o projeto?
+1. necessário ter o python instalado com a versão 3.8 ou superior
+2. opcionalmente, criar um ambiente virtual com o comando `python -m venv venv` e ativá-lo com o comando `source venv/bin/activate`
+3. instalar o pacote `ply` com o comando `pip install ply`
+4. rodar o arquivo `owl2lex.py` com o comando `python owl2lex.py`
+
 ## Especificações do Analisador Léxico para OWL2 (Manchester Syntax)
 
 ### Palavras Reservadas
@@ -30,10 +36,4 @@
 
 ### Cardinalidades
 - Representadas por números inteiros, por exemplo: `hasTopping min 3`
-
-## como rodar o projeto?
-1. necessário ter o python instalado com a versão 3.8 ou superior
-2. opcionalmente, criar um ambiente virtual com o comando `python -m venv venv` e ativá-lo com o comando `source venv/bin/activate`
-3. instalar o pacote `ply` com o comando `pip install ply`
-4. rodar o arquivo `owl2lex.py` com o comando `python owl2lex.py`
 
