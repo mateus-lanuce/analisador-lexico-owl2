@@ -70,12 +70,12 @@ def t_COMMENT(t):
     r'\#.*'
     pass
 
-#ignorar quebra de linha
+#contar quebra de linha
 def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
 
-#A ordem dos tokens é importante
+#A ordem das funcoes de tokens é importante
 
 #identificar inteiros
 def t_INTEGER(t):
@@ -90,7 +90,7 @@ def t_SPECIAL(t):
 
 #identificar tipos de dados
 def t_TYPE(t):
-    r'owl:real|rdfs:domain|xsd:string'
+    r'owl:real|rdfs:domain|xsd:string|xsd:integer'
     return t
 
 #identificar individuos
@@ -116,6 +116,8 @@ def t_IDENTIFIER(t):
     else:
         t.type = reserved.get(t.value, 'IDENTIFIER')   #se não for, é um identificador ou classe)
 
+    #TODO: se for uma classe modificar o escopo da tabela de símbolos, a tabela de simbolos deve verificar se a classe já existe e se não, adicionar
+    #e quando o identificar aparecer ver se a classe existe na tabela de símbolos e se não, retornar erro
     return t
 
 #identificar erros
@@ -128,21 +130,21 @@ lexer = lex.lex()
 # Teste
 data = '''
 Class: Customer
-EquivalentTo:
-Person
-and (purchasedPizza some Pizza)
-and (hasPhone some xsd:string)
-Individuals:
-Customer1,
-Customer10,
-Customer2,
-Customer3,
-Customer4,
-Customer5,
-Customer6,
-Customer7,
-Customer8,
-Customer9
+    EquivalentTo:
+        Person
+        and (purchasedPizza some Pizza)
+        and (hasPhone some xsd:string)
+    Individuals:
+        Customer1,
+        Customer10,
+        Customer2,
+        Customer3,
+        Customer4,
+        Customer5,
+        Customer6,
+        Customer7,
+        Customer8,
+        Customer9
 Class: Employee
 SubClassOf:
 Person
