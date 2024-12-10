@@ -144,7 +144,6 @@ def t_IDENTIFIER(t):
                 symbol_table.go_to_global_scope()
                 symbol_table.add_symbol(t.value, t.type)
                 symbol_table.enter_scope(t.type)
-            
         elif t.type == 'EQUIVALENTO' or t.type == 'INDIVIDUALS' or t.type == 'SUBCLASSOF' or t.type == 'DISJOINTCLASSES':
             #sair do escopo atual se não for o escopo de classe
             if symbol_table.get_current_scope() != 'CLASS':
