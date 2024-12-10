@@ -65,6 +65,28 @@ tokens = [
 #ignorar espaços e tabs
 t_ignore = ' \t'
 
+
+class SymbolTable:
+    
+    def __init__(self):   
+        self.symbols = {}
+    
+    contador = 0
+
+    def addSymbol(self, name, type, contador=1):
+        if name in self.symbols: # se o lexema já existir na tabela de simbolos, incrementa o contador para mostrar quantas vezes o mesmo ocorreu no texto
+            contador = contador + 1
+        self.symbols[name] = { 
+            "type": type,
+            "contador": contador,
+            #"atributtes": atributtes or {}
+        }
+    
+    def __str__(self):
+        return "\n".join(f"{key}: {value}" for key, value in self.symbols.items())
+            
+symbol_table = SymbolTable()
+
 #ignorar comentários
 def t_COMMENT(t):
     r'\#.*'
@@ -96,6 +118,7 @@ def t_TYPE(t):
 #identificar individuos
 def t_INDIVIDUAL(t):
     r'[A-Z][A-Za-z]+[0-9]+'
+    symbol_table.addSymbol(t.value, 'INDIVIDUAL')
     return t
 
 #identificar propriedades
@@ -104,6 +127,10 @@ def t_PROPERTY(t):
     #verificar se é uma palavra reservada até a 10ª ignorando maiúsculas e minúsculas
     if t.value.upper() in reserved:
         t.type = reserved[t.value.upper()]
+    else:
+        t.type = 'PROPERTY'
+        # Adicionar à tabela de símbolos como propriedade
+        symbol_table.addSymbol(t.value, 'PROPERTY')
     return t
 
 #IMPORTANTE VIR DEPOIS - identificar identificadores
@@ -115,6 +142,7 @@ def t_IDENTIFIER(t):
         t.type = reserved[t.value.upper()]
     else:
         t.type = reserved.get(t.value, 'IDENTIFIER')   #se não for, é um identificador ou classe)
+        symbol_table.addSymbol(t.value,'IDENTIFIER')
 
     #TODO: se for uma classe modificar o escopo da tabela de símbolos, a tabela de simbolos deve verificar se a classe já existe e se não, adicionar
     #e quando o identificar aparecer ver se a classe existe na tabela de símbolos e se não, retornar erro
@@ -126,6 +154,7 @@ def t_error(t):
     t.lexer.skip(1)
 
 lexer = lex.lex()
+
 
 # Teste
 data = '''
@@ -146,110 +175,110 @@ Class: Customer
         Customer8,
         Customer9
 Class: Employee
-SubClassOf:
-Person
-and (ssn min 1 xsd:string)
-Individuals:
-Chef1,
-Manager1,
-Waiter1,
-Waiter2
+    SubClassOf:
+        Person
+        and (ssn min 1 xsd:string)
+    Individuals:
+        Chef1,
+        Manager1,
+        Waiter1,
+        Waiter2
 Class: Pizza
-SubClassOf:
-hasBase some PizzaBase,
-hasCaloricContent some xsd:integer
-DisjointClasses:
-Pizza, PizzaBase, PizzaTopping
-Individuals:
-CustomPizza1,
-CustomPizza2
+    SubClassOf:
+        hasBase some PizzaBase,
+        hasCaloricContent some xsd:integer
+    DisjointClasses:
+        Pizza, PizzaBase, PizzaTopping
+    Individuals:
+        CustomPizza1,
+        CustomPizza2
 Class: CheesyPizza
-EquivalentTo:
-Pizza
-and (hasTopping some CheeseTopping)
-Individuals:
-CheesyPizza1
+    EquivalentTo:
+        Pizza
+        and (hasTopping some CheeseTopping)
+    Individuals:
+        CheesyPizza1
 Class: HighCaloriePizza
-EquivalentTo:
-Pizza
-and (hasCaloricContent some xsd:integer[>= 400])
+    EquivalentTo:
+        Pizza
+        and (hasCaloricContent some xsd:integer[>= 400])
 Class: InterestingPizza
-EquivalentTo:
-Pizza
-and (hasTopping min 3 PizzaTopping)
+    EquivalentTo:
+        Pizza
+        and (hasTopping min 3 PizzaTopping)
 Class: LowCaloriePizza
-EquivalentTo:
-Pizza
-and (hasCaloricContent some xsd:integer[< 400])
+    EquivalentTo:
+        Pizza
+        and (hasCaloricContent some xsd:integer[< 400])
 Class: NamedPizza
-SubClassOf:
-Pizza
+    SubClassOf:
+      Pizza
 Class: AmericanaHotPizza
-SubClassOf:
-NamedPizza,
-hasTopping some JalapenoPepperTopping,
-hasTopping some MozzarellaTopping,
-hasTopping some PepperoniTopping,
-hasTopping some TomatoTopping
-DisjointClasses:
-AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
-Individuals:
-AmericanaHotPizza1,
-AmericanaHotPizza2,
-AmericanaHotPizza3,
-ChicagoAmericanaHotPizza1
+    SubClassOf:
+        NamedPizza,
+        hasTopping some JalapenoPepperTopping,
+        hasTopping some MozzarellaTopping,
+        hasTopping some PepperoniTopping,
+        hasTopping some TomatoTopping
+    DisjointClasses:
+        AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
+    Individuals:
+        AmericanaHotPizza1,
+        AmericanaHotPizza2,
+        AmericanaHotPizza3,
+        ChicagoAmericanaHotPizza1
 Class: AmericanaPizza
-SubClassOf:
-NamedPizza,
-hasTopping some MozzarellaTopping,
-hasTopping some PepperoniTopping,
-hasTopping some TomatoTopping
-DisjointClasses:
-AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
-Individuals:
-AmericanaPizza1,
-AmericanaPizza2
+    SubClassOf:
+        NamedPizza,
+        hasTopping some MozzarellaTopping,
+        hasTopping some PepperoniTopping,
+        hasTopping some TomatoTopping
+    DisjointClasses:
+        AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
+    Individuals:
+        AmericanaPizza1,
+        AmericanaPizza2
 Class: MargheritaPizza
-SubClassOf:
-NamedPizza,
-hasTopping some MozzarellaTopping,
-hasTopping some TomatoTopping,
-hasTopping only
-(MozzarellaTopping or TomatoTopping)
-DisjointClasses:
-AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
-Individuals:
-MargheritaPizza1,
-MargheritaPizza2
+    SubClassOf:
+        NamedPizza,
+        hasTopping some MozzarellaTopping,
+        hasTopping some TomatoTopping,
+        hasTopping only
+        (MozzarellaTopping or TomatoTopping)
+    DisjointClasses:
+        AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
+    Individuals:
+        MargheritaPizza1,
+        MargheritaPizza2
 Class: SohoPizza
-SubClassOf:
-NamedPizza,
-hasTopping some MozzarellaTopping,
-hasTopping some OliveTopping,
-hasTopping some ParmesanTopping,
-hasTopping some TomatoTopping,
-hasTopping only
-(MozzarellaTopping or OliveTopping or ParmesanTopping or TomatoTopping)
-DisjointClasses:
-AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
-Individuals:
-SohoPizza1,
-SohoPizza2
+    SubClassOf:
+        NamedPizza,
+        hasTopping some MozzarellaTopping,
+        hasTopping some OliveTopping,
+        hasTopping some ParmesanTopping,
+        hasTopping some TomatoTopping,
+        hasTopping only
+        (MozzarellaTopping or OliveTopping or ParmesanTopping or TomatoTopping)
+    DisjointClasses:
+      AmericanaHotPizza, AmericanaPizza, MargheritaPizza, SohoPizza
+    Individuals:
+        SohoPizza1,
+        SohoPizza2
 Class: SpicyPizza
-EquivalentTo:
-Pizza
-and (hasTopping some (hasSpiciness value Hot))
+    EquivalentTo:
+        Pizza
+        and (hasTopping some (hasSpiciness value Hot))
 Class: VegetarianPizza
-EquivalentTo:
-Pizza
-and (hasTopping only
-(CheeseTopping or VegetableTopping))
+    EquivalentTo:
+        Pizza
+        and (hasTopping only
+        (CheeseTopping or VegetableTopping))
 Class: PizzaBase
-DisjointClasses:
-Pizza, PizzaBase, PizzaTopping
+    DisjointClasses:
+        Pizza, PizzaBase, PizzaTopping
 Class: PizzaTopping
-DisjointClasses:
-Pizza, PizzaBase, PizzaTopping
+    DisjointClasses:
+        Pizza, PizzaBase, PizzaTopping
 Class: Spiciness
 EquivalentTo:
 {Hot , Medium , Mild}
@@ -257,8 +286,14 @@ EquivalentTo:
 
 lexer.input(data)
 
-for tok in lexer:
+while True:
+    tok = lexer.token()
+    if not tok:
+        break
     print(tok)
+    
+print('\n Tabela de Símbolos:')
+print(symbol_table)
 
 # Resultado esperado:
 # ('CLASS', 'Class:')
