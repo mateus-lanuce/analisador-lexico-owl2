@@ -34,6 +34,7 @@
 #------------------------------------
 
 import ply.lex as lex
+from SymbolTable import SymbolTableTree
 
 reserved = {
     'SOME': 'SOME',
@@ -65,27 +66,8 @@ tokens = [
 #ignorar espaços e tabs
 t_ignore = ' \t'
 
-
-class SymbolTable:
-    
-    def __init__(self):   
-        self.symbols = {}
-    
-    contador = 0
-
-    def addSymbol(self, name, type, contador=1):
-        if name in self.symbols: # se o lexema já existir na tabela de simbolos, incrementa o contador para mostrar quantas vezes o mesmo ocorreu no texto
-            contador = contador + 1
-        self.symbols[name] = { 
-            "type": type,
-            "contador": contador,
-            #"atributtes": atributtes or {}
-        }
-    
-    def __str__(self):
-        return "\n".join(f"{key}: {value}" for key, value in self.symbols.items())
-            
-symbol_table = SymbolTable()
+# Criando a tabela de símbolos com escopos
+symbol_table = SymbolTableTree()
 
 #ignorar comentários
 def t_COMMENT(t):
@@ -103,22 +85,27 @@ def t_newline(t):
 def t_INTEGER(t):
     r'\d+'
     t.value = int(t.value)
+
+    # Adicionar à tabela de símbolos com o tipo e o valor
+    symbol_table.add_symbol(t.value, t.type)
     return t
 
 #identificar símbolos especiais
 def t_SPECIAL(t):
     r'\[|\]|\{|\}|\(|\)|>|<|,'
+    symbol_table.add_symbol(t.value, t.type)
     return t
 
 #identificar tipos de dados
 def t_TYPE(t):
     r'owl:real|rdfs:domain|xsd:string|xsd:integer'
+    symbol_table.add_symbol(t.value, t.type)
     return t
 
 #identificar individuos
 def t_INDIVIDUAL(t):
     r'[A-Z][A-Za-z]+[0-9]+'
-    symbol_table.addSymbol(t.value, 'INDIVIDUAL')
+    symbol_table.add_symbol(t.value, t.type)
     return t
 
 #identificar propriedades
@@ -127,10 +114,11 @@ def t_PROPERTY(t):
     #verificar se é uma palavra reservada até a 10ª ignorando maiúsculas e minúsculas
     if t.value.upper() in reserved:
         t.type = reserved[t.value.upper()]
+        symbol_table.add_symbol(t.value, t.type)
     else:
         t.type = 'PROPERTY'
         # Adicionar à tabela de símbolos como propriedade
-        symbol_table.addSymbol(t.value, 'PROPERTY')
+        symbol_table.add_symbol(t.value, t.type)
     return t
 
 #IMPORTANTE VIR DEPOIS - identificar identificadores
@@ -140,12 +128,32 @@ def t_IDENTIFIER(t):
     #verificar se é uma palavra reservada até a 10ª ignorando maiúsculas e minúsculas
     if t.value.upper() in reserved:
         t.type = reserved[t.value.upper()]
+        symbol_table.add_symbol(t.value, t.type)
     else:
         t.type = reserved.get(t.value, 'IDENTIFIER')   #se não for, é um identificador ou classe)
-        symbol_table.addSymbol(t.value,'IDENTIFIER')
 
-    #TODO: se for uma classe modificar o escopo da tabela de símbolos, a tabela de simbolos deve verificar se a classe já existe e se não, adicionar
-    #e quando o identificar aparecer ver se a classe existe na tabela de símbolos e se não, retornar erro
+        # nesse momento deve-se verificar o escopo da tabela de símbolos
+        # se for uma classe, deve adicionar o identificador à tabela de símbolos e criar um novo escopo
+        if t.type == 'CLASS':
+            #verificar se é o escopo global
+            if symbol_table.is_global_scope():
+                symbol_table.add_symbol(t.value, t.type)
+                symbol_table.enter_scope(t.type)
+            else:
+                #ir para o escopo global e adicionar o identificador, pois classes são globais
+                symbol_table.go_to_global_scope()
+                symbol_table.add_symbol(t.value, t.type)
+                symbol_table.enter_scope(t.type)
+            
+        elif t.type == 'EQUIVALENTO' or t.type == 'INDIVIDUALS' or t.type == 'SUBCLASSOF' or t.type == 'DISJOINTCLASSES':
+            #sair do escopo atual se não for o escopo de classe
+            if symbol_table.get_current_scope() != 'CLASS':
+                symbol_table.exit_scope()
+            symbol_table.add_symbol(t.value, t.type)
+            symbol_table.enter_scope(t.type)
+        else:
+            symbol_table.add_symbol(t.value, t.type)
+        
     return t
 
 #identificar erros
@@ -293,7 +301,7 @@ while True:
     print(tok)
     
 print('\n Tabela de Símbolos:')
-print(symbol_table)
+print(symbol_table.print_tree())
 
 # Resultado esperado:
 # ('CLASS', 'Class:')
