@@ -37,3 +37,7 @@
 ### Cardinalidades
 - Representadas por números inteiros, por exemplo: `hasTopping min 3`
 
+### Como funciona a tabela de simbolos?
+- A tabela de simbolos funciona como uma arvore 
+- Cada nó da arvore guarda dados como os sibolos daquele nó, o escopo dele e também os filhos deles, ou seja, os escopos filhos.
+
