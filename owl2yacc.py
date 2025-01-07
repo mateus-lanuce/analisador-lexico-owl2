@@ -18,14 +18,14 @@ def p_class_declaration(p):
     """class_declaration : CLASS IDENTIFIER class_body"""
     p[0] = ('ClassDeclaration', p[2], p[3])
 
-#TODO: adicionar e criar no class body e as variacoes: | equivalent_to disjoint_section individuals_section
-                  #  | equivalent_to disjoint_section
-                  #  | equivalent_to individuals_section
-                  #  | equivalent_to
 def p_class_body(p):
     """class_body : primitive_body
                   """
     p[0] = ('ClassBody', p[1:])
+
+def p_class_body_error(p):
+    """class_body : error"""
+    print('Erro de sintaxe na declaração de classe')
 
 def p_primitive_body(p):
     """primitive_body : subclass_section disjoint_section individuals_section
@@ -35,6 +35,38 @@ def p_primitive_body(p):
                       """
     print('classe primitiva: ', p[1:])
     p[0] = ('ClassBody', p[1])
+
+#classe definida
+def p_defined_body(p):
+    """defined_body : equivalent_section disjoint_section individuals_section
+                   | equivalent_section disjoint_section
+                   | equivalent_section individuals_section
+                   | equivalent_section
+                      """
+    print('classe definida: ', p[1:])
+    p[0] = ('ClassBody', p[1])
+
+#corpo de Classe com axioma de fechamento (closure axiom)
+def p_closure_body(p):
+    """closure_body : subclass_section_only disjoint_section individuals_section
+                     | subclass_section_only disjoint_section
+                     | subclass_section_only individuals_section
+                     | subclass_section_only
+                      """
+    print('classe com axioma de fechamento: ', p[1:])
+    p[0] = ('ClassBody', p[1])
+
+#corpo de classe com  Classe com descrições aninhadas
+def p_nested_body(p):
+    """nested_body : equivalent_section_nested disjoint_section individuals_section
+                     | equivalent_section_nested disjoint_section
+                     | equivalent_section_nested individuals_section
+                     | equivalent_section_nested
+                      """
+    print('classe com descrições aninhadas: ', p[1:])
+    p[0] = ('ClassBody', p[1])
+
+#TODO: equivalent_to
 
 def p_subclass_section(p):
     """subclass_section : SUBCLASSOF subclass_expressions"""
