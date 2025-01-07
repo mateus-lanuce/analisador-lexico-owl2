@@ -38,6 +38,7 @@ from SymbolTable import SymbolTableTree
 
 reserved = {
     'SOME': 'SOME',
+    'ONLY': 'ONLY',
     'ALL': 'ALL',
     'VALUE': 'VALUE',
     'MIN': 'MIN',
@@ -291,16 +292,16 @@ EquivalentTo:
 {Hot , Medium , Mild}
 '''
 
-lexer.input(data)
+# lexer.input(data)
 
-while True:
-    tok = lexer.token()
-    if not tok:
-        break
-    print(tok)
+# while True:
+#     tok = lexer.token()
+#     if not tok:
+#         break
+#     print(tok)
     
-print('\n Tabela de Símbolos:')
-print(symbol_table.print_tree())
+# print('\n Tabela de Símbolos:')
+# print(symbol_table.print_tree())
 
 # Resultado esperado:
 # ('CLASS', 'Class:')
