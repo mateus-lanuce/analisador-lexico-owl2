@@ -77,7 +77,9 @@ def p_subclass_section(p):
     
 def p_subclass_expressions(p):
     """subclass_expressions : subclass_expressions SPECIAL subclass_expression
-                             | subclass_expression"""
+                             | subclass_expression
+                             | subclass_expressions_only
+                             """
     if len(p) == 2:
         p[0] = [p[1]]
     else:
@@ -92,9 +94,15 @@ def p_subclass_expression(p):
                             | PROPERTY EXACTLY INTEGER
                             | PROPERTY SOME TYPE
                             | PROPERTY SOME '(' PROPERTY VALUE TYPE ')'
+                            | identifier_list
+                            | PROPERTY ONLY SPECIAL IDENTIFIER OR IDENTIFIER SPECIAL
                             """
-    print('parsed a subclass expression', p[1], p[2], p[3])
-    p[0] = ('SubClassExpression', p[1], p[2:])    
+    if len(p) == 2:
+        print ('analisado uma subclass_expression', p[1])
+        p[0] = ('SubClassExpression', p[1])
+    else:
+        print('parsed a subclass expression', p[1], p[2], p[3])
+        p[0] = ('SubClassExpression', p[1], p[2:])    
     
 def p_subclass_section_only(p):
     """subclass_section_only : SUBCLASSOF subclass_expressions_only"""
@@ -109,16 +117,7 @@ def p_subclass_expressions_only(p):
         p[0] = p[1] + [p[3]]
 
 def p_subclass_expression_only(p):
-    """subclass_expression_only : PROPERTY SOME IDENTIFIER
-                            | PROPERTY ALL IDENTIFIER
-                            | PROPERTY VALUE IDENTIFIER
-                            | PROPERTY MIN INTEGER
-                            | PROPERTY MAX INTEGER
-                            | PROPERTY EXACTLY INTEGER
-                            | PROPERTY ONLY '(' IDENTIFIER OR IDENTIFIER ')'
-                            | PROPERTY SOME TYPE
-                            | PROPERTY SOME '(' PROPERTY VALUE TYPE ')'
-                            """
+    """subclass_expression_only : PROPERTY ONLY SPECIAL IDENTIFIER OR IDENTIFIER SPECIAL"""
     print('parsed a subclass expression only', p[1], p[2], p[3])
     p[0] = ('SubClassExpression', p[1], p[2:])
 
