@@ -72,15 +72,9 @@ def p_nested_body(p):
 #TODO: equivalent_to
 
 def p_subclass_section(p):
-    """subclass_section : SUBCLASSOF IDENTIFIER ',' subclass_expressions 
-                        | subclass_expressions ',' subclass_expressions"""
-    p[0] = ('SubClassOf', p[2:]) #mexi nessa parte pra tentar ler a virgula do exemplo, mas acho que no final n é isso.
+    """subclass_section : SUBCLASSOF subclass_expressions"""
+    p[0] = ('SubClassOf', p[2:])
     
-def p_subclass_section_only(p):
-    """subclass_section_only : SUBCLASSOF IDENTIFIER"""
-    p[0] = ('SubClassOf', p[2])
-    
-
 def p_subclass_expressions(p):
     """subclass_expressions : subclass_expressions SPECIAL subclass_expression
                              | subclass_expression"""
@@ -96,15 +90,40 @@ def p_subclass_expression(p):
                             | PROPERTY MIN INTEGER
                             | PROPERTY MAX INTEGER
                             | PROPERTY EXACTLY INTEGER
-                            | PROPERTY ONLY '(' IDENTIFIER OR IDENTIFIER ')'
                             | PROPERTY SOME TYPE
                             | PROPERTY SOME '(' PROPERTY VALUE TYPE ')'
                             """
     print('parsed a subclass expression', p[1], p[2], p[3])
+    p[0] = ('SubClassExpression', p[1], p[2:])    
+    
+def p_subclass_section_only(p):
+    """subclass_section_only : SUBCLASSOF subclass_expressions_only"""
+    p[0] = ('SubClassOf', p[2])
+
+def p_subclass_expressions_only(p):
+    """subclass_expressions_only : subclass_expressions_only SPECIAL subclass_expression_only
+                             | subclass_expression_only"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
+
+def p_subclass_expression_only(p):
+    """subclass_expression_only : PROPERTY SOME IDENTIFIER
+                            | PROPERTY ALL IDENTIFIER
+                            | PROPERTY VALUE IDENTIFIER
+                            | PROPERTY MIN INTEGER
+                            | PROPERTY MAX INTEGER
+                            | PROPERTY EXACTLY INTEGER
+                            | PROPERTY ONLY '(' IDENTIFIER OR IDENTIFIER ')'
+                            | PROPERTY SOME TYPE
+                            | PROPERTY SOME '(' PROPERTY VALUE TYPE ')'
+                            """
+    print('parsed a subclass expression only', p[1], p[2], p[3])
     p[0] = ('SubClassExpression', p[1], p[2:])
 
 def p_disjoint_section(p):
-    """disjoint_section : DISJOINTCLASSES ':' identifier_list"""
+    """disjoint_section : DISJOINTCLASSES identifier_list"""
     p[0] = ('DisjointClasses', p[3])
 
 def p_identifier_list(p):
@@ -116,7 +135,7 @@ def p_identifier_list(p):
         p[0] = p[1] + [p[3]]
 
 def p_individuals_section(p):
-    """individuals_section : INDIVIDUALS ':' individual_list"""
+    """individuals_section : INDIVIDUALS individual_list"""
     p[0] = ('Individuals', p[3])
 
 def p_individual_list(p):
@@ -128,7 +147,7 @@ def p_individual_list(p):
         p[0] = p[1] + [p[3]]
     
 def p_equivalent_section(p): 
-    """equivalent_section :  EQUIVALENTO ':' identifier_list AND subclass_expression """
+    """equivalent_section :  EQUIVALENTO identifier_list AND subclass_expression """
     p[0] = p[1] + p[3]
 
 def p_equivalent_section_nested(p):
