@@ -101,13 +101,13 @@ def p_subclass_expression(p):
                             | PROPERTY ONLY SPECIAL IDENTIFIER OR IDENTIFIER SPECIAL
                             """
     if len(p) == 2:
-        print ('analisado uma subclass_expression', p[1])
+        print ('analisado uma subclass_expression de identificador', p[1])
         p[0] = ('SubClassExpression', p[1])
     elif len(p) == 8:
         print('analisado uma subclass_expression com axioma de fechamento', p[1], p[2], p[3], p[4], p[5], p[6])
         p[0] = ('SubClassExpressionClosure', p[1], p[2], p[3], p[4], p[5], p[6])
     else:
-        print('parsed a subclass expression', p[1], p[2], p[3])
+        print('analisado uma subclass_expression', p[1], p[2], p[3])
         p[0] = ('SubClassExpression', p[1], p[2:])   
 
 def p_subclass_expression_error(p):
