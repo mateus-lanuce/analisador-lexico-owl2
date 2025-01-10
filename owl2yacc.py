@@ -69,12 +69,6 @@ def p_defined_body(p):
          print('classe numerada: ', p[1:])
          p[0] = ('ClassBodyNumered', p[1])
 
-# vai ter de ser um if(p[1][2][3][4][5] == 'VALUE') NÃO DEU CERTO
-#
-#
-
-#TODO: equivalent_to
-
 def p_subclass_section(p):
     """subclass_section : SUBCLASSOF subclass_expressions"""
     # se tiver uma subclassExpressionClosure, modificar para SubClassOfClosure, necessario percorrer a lista de subclass_expressions
@@ -198,30 +192,32 @@ def p_equivalent_expressions(p):
         p[0] = p[1] + [p[3]]
 
 def p_equivalent_expression(p):
-    """equivalent_expression : identifier_list
-                               | IDENTIFIER AND SPECIAL complex_property_expression SPECIAL
-                               | SPECIAL TYPE SPECIAL TYPE SPECIAL TYPE SPECIAL
+    """equivalent_expression : IDENTIFIER AND SPECIAL complex_property_expression SPECIAL
+                               | SPECIAL identifier_list SPECIAL
                                | TYPE OR TYPE OR TYPE
                                """
-    if len(p) == 2:
-      print('Analisando uma ')
-      p[0] = ('EquivalentExpression', p[1:])
-    elif len(p) == 6:
-        print('Analisando uma classe coberta')
-        p[0] = ('EquivalentoCoveredClass', *p[1:])
+    
+    if len(p) == 6 and p[2] == 'and':
+        print('Analisando uma expressao de classe definida', *p[1:])
+        p[0] = ('EquivalentExpression', *p[1:])
+
+        if p[4][0] == 'ComplexPropertyExpressionAninhada':
+            print('Analisando uma expressao de classe aninhada', *p[4])
+            p[0] = ('EquivalentExpressionAninhada', *p[1:])
     elif len(p) == 7:
         print('Analisando uma classe numerada')
         p[0] = ('EquivalentoNumeredClass', *p[1:])
 
 def p_complex_property_expression_equivalent_to(p):
     """complex_property_expression : PROPERTY SOME IDENTIFIER
-                                      | PROPERTY SOME SPECIAL PROPERTY VALUE TYPE SPECIAL
+                                      | PROPERTY SOME SPECIAL PROPERTY VALUE IDENTIFIER SPECIAL
                                       """
     if len(p) == 8:
-       print('Analisando uma Classe aninhada', p[1])
-       p[0] = ('ClasseAninhada', p[1], p[2], p[3], p[4], p[5], p[6])
-       
-    p[0] = ('ComplexPropertyExpression', p[1:])
+       print('Analisando uma propriedade complexa aninhada', *p[1:])
+       p[0] = ('ComplexPropertyExpressionAninhada', *p[1:])
+    else:
+        print('Analisando uma propriedade complexa', *p[1:])
+        p[0] = ('ComplexPropertyExpression', *p[1:])
 
 
 
