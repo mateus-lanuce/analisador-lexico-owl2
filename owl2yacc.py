@@ -16,15 +16,24 @@ precedence = (
 
 def p_class_declaration(p):
     """class_declaration : CLASS IDENTIFIER class_body"""
-    p[0] = ('ClassDeclaration', p[2], p[3])
+    p[0] = ('ClassDeclaration', p[1], p[2], p[3])
+
+    if p[3][0] == 'ClassBodyPrimitive':
+        print('\nclasse primitiva declarada: \n', p[1], p[2], p[3])
+    elif p[3][0] == 'ClassBodyPrimitiveClosure':
+        print('\nclasse primitiva com axioma de fechamento declarada: \n', p[1], p[2], p[3])
 
 def p_class_body(p):
     """class_body : primitive_body
                     | defined_body
-                    | nested_body
-                    | closure_body
                   """
-    p[0] = ('ClassBody', p[1:])
+    
+    if p[1][0] == 'primitiveBody':
+        p[0] = ('ClassBodyPrimitive', p[1:])
+    elif p[1][0] == 'primitiveBodyClosure':
+        p[0] = ('ClassBodyPrimitiveClosure', p[1:])
+
+    #TODO: adicionar regras para defined_body
 
 def p_class_body_error(p):
     """class_body : error"""
@@ -36,8 +45,11 @@ def p_primitive_body(p):
                    | subclass_section individuals_section
                    | subclass_section
                       """
-    print('classe primitiva: ', p[1:])
-    p[0] = ('ClassBody', p[1])
+
+    if p[1][0] == 'SubClassOf':
+        p[0] = ('primitiveBody', p[1])
+    elif p[1][0] == 'SubClassOfClosure':
+        p[0] = ('primitiveBodyClosure', p[1])
 
 #classe definida
 def p_defined_body(p):
@@ -46,48 +58,49 @@ def p_defined_body(p):
                    | equivalent_section individuals_section
                    | equivalent_section
                       """
-    print('classe definida: ', p[1:])
-    p[0] = ('ClassBody', p[1])
+    
+    if p[1][0] == 'EquivalentExpression':        
+      print('classe definida: ', p[1:])
+      p[0] = ('ClassBody', p[1])
+    elif p[1][0] == 'CoveredClass':
+        print('classe coberta: ', p[1:])
+        p[0] = ('ClassBodyCovered', p[1])
+    elif p[1][0] == 'NumeredClass':
+         print('classe numerada: ', p[1:])
+         p[0] = ('ClassBodyNumered', p[1])
 
-#corpo de Classe com axioma de fechamento (closure axiom)
-def p_closure_body(p):
-    """closure_body : subclass_section_only disjoint_section individuals_section
-                     | subclass_section_only disjoint_section
-                     | subclass_section_only individuals_section
-                     | subclass_section_only
-                      """
-    print('classe com axioma de fechamento: ', p[1:])
-    p[0] = ('ClassBody', p[1])
-
-#corpo de classe com  Classe com descrições aninhadas
-def p_nested_body(p):
-    """nested_body : equivalent_section_nested disjoint_section individuals_section
-                     | equivalent_section_nested disjoint_section
-                     | equivalent_section_nested individuals_section
-                     | equivalent_section_nested
-                      """
-    print('classe com descrições aninhadas: ', p[1:])
-    p[0] = ('ClassBody', p[1])
+# vai ter de ser um if(p[1][2][3][4][5] == 'VALUE') NÃO DEU CERTO
+#
+#
 
 #TODO: equivalent_to
 
 def p_subclass_section(p):
-    """subclass_section : SUBCLASSOF IDENTIFIER ',' subclass_expressions 
-                        | subclass_expressions ',' subclass_expressions"""
-    p[0] = ('SubClassOf', p[2:]) #mexi nessa parte pra tentar ler a virgula do exemplo, mas acho que no final n é isso.
-    
-def p_subclass_section_only(p):
-    """subclass_section_only : SUBCLASSOF IDENTIFIER"""
-    p[0] = ('SubClassOf', p[2])
-    
+    """subclass_section : SUBCLASSOF subclass_expressions"""
+    # se tiver uma subclassExpressionClosure, modificar para SubClassOfClosure, necessario percorrer a lista de subclass_expressions
+    for i in p[2]:
+        if i[0] == 'SubClassExpressionClosure':
+            p[0] = ('SubClassOfClosure', *p[2:])
+            return
 
+    p[0] = ('SubClassOf', *p[2:])
+
+def p_subclass_section_error(p):
+    """subclass_section : error"""
+    print('Erro de sintaxe na declaração de subclasse')
+    
 def p_subclass_expressions(p):
     """subclass_expressions : subclass_expressions SPECIAL subclass_expression
-                             | subclass_expression"""
+                             | subclass_expression
+                             """
     if len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[3]]
+
+def p_subclass_expressions_error(p):
+    """subclass_expressions : error"""
+    print('Erro de sintaxe na declaração de expressão de subclasse')
 
 def p_subclass_expression(p):
     """subclass_expression : PROPERTY SOME IDENTIFIER
@@ -96,47 +109,121 @@ def p_subclass_expression(p):
                             | PROPERTY MIN INTEGER
                             | PROPERTY MAX INTEGER
                             | PROPERTY EXACTLY INTEGER
-                            | PROPERTY ONLY '(' IDENTIFIER OR IDENTIFIER ')'
                             | PROPERTY SOME TYPE
-                            | PROPERTY SOME '(' PROPERTY VALUE TYPE ')'
+                            | PROPERTY SOME SPECIAL PROPERTY VALUE TYPE SPECIAL
+                            | IDENTIFIER
+                            | PROPERTY ONLY SPECIAL IDENTIFIER OR IDENTIFIER SPECIAL
                             """
-    print('parsed a subclass expression', p[1], p[2], p[3])
-    p[0] = ('SubClassExpression', p[1], p[2:])
+    if len(p) == 2:
+        print ('analisado uma subclass_expression de identificador', p[1])
+        p[0] = ('SubClassExpression', p[1])
+    elif len(p) == 8:
+        print('analisado uma subclass_expression com axioma de fechamento', p[1], p[2], p[3], p[4], p[5], p[6])
+        p[0] = ('SubClassExpressionClosure', p[1], p[2], p[3], p[4], p[5], p[6])
+    else:
+        print('analisado uma subclass_expression', p[1], p[2], p[3])
+        p[0] = ('SubClassExpression', p[1], p[2:])   
+
+def p_subclass_expression_error(p):
+    """subclass_expression : error"""
+    print('Erro de sintaxe na declaração de subclasse') 
 
 def p_disjoint_section(p):
-    """disjoint_section : DISJOINTCLASSES ':' identifier_list"""
-    p[0] = ('DisjointClasses', p[3])
+    """disjoint_section : DISJOINTCLASSES identifier_list"""
+    p[0] = ('DisjointClasses', p[2])
+
+def p_disjoint_section_error(p):
+    """disjoint_section : error"""
+    print('Erro de sintaxe na declaração de disjoint classes')
 
 def p_identifier_list(p):
-    """identifier_list : identifier_list ',' IDENTIFIER
+    """identifier_list : identifier_list SPECIAL IDENTIFIER
                         | IDENTIFIER"""
     if len(p) == 2:
-        p[0] = [p[1]]
+        p[0] = p[1]
     else:
-        p[0] = p[1] + [p[3]]
+        p[0] = list()
+        p[0].append(p[1])
+        if type(p[1]) == list:
+            p[1].append(p[3])
+            p[0].append(p[1])
+        else:
+            p[0].append(p[3])
+
+def p_identifier_list_error(p):
+    """identifier_list : error"""
+    print('Erro de sintaxe na declaração de lista de identificadores')
 
 def p_individuals_section(p):
-    """individuals_section : INDIVIDUALS ':' individual_list"""
-    p[0] = ('Individuals', p[3])
+    """individuals_section : INDIVIDUALS individual_list"""
+    p[0] = ('Individuals', p[2:])
+
+def p_individuals_section_error(p):
+    """individuals_section : error"""
+    print('Erro de sintaxe na declaração de individuos')
 
 def p_individual_list(p):
-    """individual_list : individual_list ',' INDIVIDUAL
+    """individual_list : individual_list SPECIAL INDIVIDUAL
                         | INDIVIDUAL"""
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = list()
+        p[0].append(p[1])
+        p[0].append(p[3])
+
+def p_individual_list_error(p):
+    """individual_list : error"""
+    print('Erro de sintaxe na declaração de lista de individuos')
+    
+def p_equivalent_section(p): 
+    """equivalent_section :  EQUIVALENTO equivalent_expressions"""
+    for i in p[2]:
+        if i[0] == 'EquivalentoCoveredClass':
+            p[0] = ('CoveredClass', *p[2:])
+            return
+        elif i[0] == 'EquivalentoNumeredClass':
+            p[0] == ('NumeredClass', *p[2:])
+            return
+    
+    p[0] = ('EquivalentExpression', *p[2:])
+
+def p_equivalent_expressions(p):
+    """equivalent_expressions : equivalent_expressions SPECIAL equivalent_expression
+                                | equivalent_expression
+                                """
     if len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[3]]
-    
-def p_equivalent_section(p): 
-    """equivalent_section :  EQUIVALENTO ':' identifier_list AND subclass_expression """
-    p[0] = p[1] + p[3]
 
-def p_equivalent_section_nested(p):
-    """equivalent_section_nested : equivalent_section AND subclass_expression
-                                  | equivalent_section AND identifier_list SOME subclass_expression"""
-    p[0] = p[1] + p[3]
+def p_equivalent_expression(p):
+    """equivalent_expression : identifier_list
+                               | IDENTIFIER AND SPECIAL complex_property_expression SPECIAL
+                               | SPECIAL TYPE SPECIAL TYPE SPECIAL TYPE SPECIAL
+                               | TYPE OR TYPE OR TYPE
+                               """
+    if len(p) == 2:
+      print('Analisando uma ')
+      p[0] = ('EquivalentExpression', p[1:])
+    elif len(p) == 6:
+        print('Analisando uma classe coberta')
+        p[0] = ('EquivalentoCoveredClass', *p[1:])
+    elif len(p) == 7:
+        print('Analisando uma classe numerada')
+        p[0] = ('EquivalentoNumeredClass', *p[1:])
 
-#na equivalent pode ter, identificador, lista de subclassExpressions
+def p_complex_property_expression_equivalent_to(p):
+    """complex_property_expression : PROPERTY SOME IDENTIFIER
+                                      | PROPERTY SOME SPECIAL PROPERTY VALUE TYPE SPECIAL
+                                      """
+    if len(p) == 8:
+       print('Analisando uma Classe aninhada', p[1])
+       p[0] = ('ClasseAninhada', p[1], p[2], p[3], p[4], p[5], p[6])
+       
+    p[0] = ('ComplexPropertyExpression', p[1:])
+
+
 
 def p_error(p):
     print("Erro de sintaxe em '%s'" % p.value if p else "EOF")
@@ -145,12 +232,10 @@ def p_error(p):
 # Construtor do parser
 parser = yacc.yacc()
 
-dataTeste = '''Class: MargheritaPizza
-SubClassOf:
-NamedPizza,
-hasTopping some MozzarellaTopping,
-hasTopping some TomatoTopping,
-hasTopping only (MozzarellaTopping or TomatoTopping)
+dataTeste = '''Class: SpicyPizza
+EquivalentTo:
+Pizza
+and (hasTopping some (hasSpiciness value Hot))
 '''
 
 lexer.input(dataTeste)
