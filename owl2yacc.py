@@ -32,6 +32,13 @@ def p_class_body(p):
         p[0] = ('ClassBodyPrimitive', p[1:])
     elif p[1][0] == 'primitiveBodyClosure':
         p[0] = ('ClassBodyPrimitiveClosure', p[1:])
+    elif p[1][0] == 'ClassBody':
+        p[0] = ('ClassBodyDefined', p[1:])
+    elif p[1][0] == 'ClassCovered':
+        p[0] = ('ClassBodyCovered', p[1:])
+    elif p[1][0] == 'ClassNumered':
+        p[0] = ('ClassBodyNumered', p[1:])      
+    
 
     #TODO: adicionar regras para defined_body
 
@@ -64,10 +71,11 @@ def p_defined_body(p):
       p[0] = ('ClassBody', p[1])
     elif p[1][0] == 'CoveredClass':
         print('classe coberta: ', p[1:])
-        p[0] = ('ClassBodyCovered', p[1])
+        p[0] = ('ClassCovered', p[1])
     elif p[1][0] == 'NumeredClass':
          print('classe numerada: ', p[1:])
-         p[0] = ('ClassBodyNumered', p[1])
+         p[0] = ('ClassNumered', p[1])
+  
 
 def p_subclass_section(p):
     """subclass_section : SUBCLASSOF subclass_expressions"""
@@ -171,13 +179,13 @@ def p_individual_list_error(p):
     print('Erro de sintaxe na declaração de lista de individuos')
     
 def p_equivalent_section(p): 
-    """equivalent_section :  EQUIVALENTO equivalent_expressions"""
+    """equivalent_section : EQUIVALENTO equivalent_expressions"""
     for i in p[2]:
         if i[0] == 'EquivalentoCoveredClass':
             p[0] = ('CoveredClass', *p[2:])
             return
         elif i[0] == 'EquivalentoNumeredClass':
-            p[0] == ('NumeredClass', *p[2:])
+            p[0] = ('NumeredClass', *p[2:])
             return
     
     p[0] = ('EquivalentExpression', *p[2:])
@@ -194,19 +202,24 @@ def p_equivalent_expressions(p):
 def p_equivalent_expression(p):
     """equivalent_expression : IDENTIFIER AND SPECIAL complex_property_expression SPECIAL
                                | SPECIAL identifier_list SPECIAL
-                               | TYPE OR TYPE OR TYPE
+                               | IDENTIFIER OR IDENTIFIER OR IDENTIFIER
                                """
     
     if len(p) == 6 and p[2] == 'and':
-        print('Analisando uma expressao de classe definida', *p[1:])
+        print('Analisando uma expressao de classe definida: ', *p[1:])
         p[0] = ('EquivalentExpression', *p[1:])
 
         if p[4][0] == 'ComplexPropertyExpressionAninhada':
-            print('Analisando uma expressao de classe aninhada', *p[4])
+            print('Analisando uma expressao de classe aninhada: ', *p[4])
             p[0] = ('EquivalentExpressionAninhada', *p[1:])
-    elif len(p) == 7:
-        print('Analisando uma classe numerada')
+        
+    elif len(p) == 4:
+        print('Analisando uma classe numerada: ')
         p[0] = ('EquivalentoNumeredClass', *p[1:])
+        
+    elif len(p) == 6 and p[2] == 'or':
+        print('Analisando uma classe coberta: ')
+        p[0] = ('EquivalentoCoveredClass', *p[1:])
 
 def p_complex_property_expression_equivalent_to(p):
     """complex_property_expression : PROPERTY SOME IDENTIFIER
@@ -220,18 +233,15 @@ def p_complex_property_expression_equivalent_to(p):
         p[0] = ('ComplexPropertyExpression', *p[1:])
 
 
-
 def p_error(p):
     print("Erro de sintaxe em '%s'" % p.value if p else "EOF")
-
 
 # Construtor do parser
 parser = yacc.yacc()
 
-dataTeste = '''Class: SpicyPizza
-EquivalentTo:
-Pizza
-and (hasTopping some (hasSpiciness value Hot))
+dataTeste = '''
+Class: Spiciness
+EquivalentTo: Hot or Medium or Mild
 '''
 
 lexer.input(dataTeste)
