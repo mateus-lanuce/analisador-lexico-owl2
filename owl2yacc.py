@@ -22,6 +22,12 @@ def p_class_declaration(p):
         print('\nclasse primitiva declarada: \n', p[1], p[2], p[3])
     elif p[3][0] == 'ClassBodyPrimitiveClosure':
         print('\nclasse primitiva com axioma de fechamento declarada: \n', p[1], p[2], p[3])
+    elif p[3][0] == 'ClassBodyDefined':
+        print('\nclasse definida declarada: \n', p[1], p[2], p[3])
+    elif p[3][0] == 'ClassBodyCovered':
+        print('\nclasse coberta declarada: \n', p[1], p[2], p[3])
+    elif p[3][0] == 'ClassBodyNumered':
+        print('\nclasse numerada declarada: \n', p[1], p[2], p[3])
 
 def p_class_body(p):
     """class_body : primitive_body
