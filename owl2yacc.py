@@ -13,7 +13,6 @@ precedence = (
 )
 
 # Regras da gramática
-
 def p_class_declaration(p):
     """class_declaration : CLASS IDENTIFIER class_body"""
     p[0] = ('ClassDeclaration', p[1], p[2], p[3])
@@ -60,9 +59,9 @@ def p_primitive_body(p):
                       """
 
     if p[1][0] == 'SubClassOf':
-        p[0] = ('primitiveBody', p[1])
+        p[0] = ('primitiveBody', *p[1:])
     elif p[1][0] == 'SubClassOfClosure':
-        p[0] = ('primitiveBodyClosure', p[1])
+        p[0] = ('primitiveBodyClosure', *p[1:])
 
 #classe definida
 def p_defined_body(p):
@@ -73,14 +72,14 @@ def p_defined_body(p):
                       """
     
     if p[1][0] == 'EquivalentExpression':        
-      print('classe definida: ', p[1:])
-      p[0] = ('ClassBody', p[1])
+      print('classe definida: ', *p[1:])
+      p[0] = ('ClassBody', *p[1:])
     elif p[1][0] == 'CoveredClass':
-        print('classe coberta: ', p[1:])
-        p[0] = ('ClassCovered', p[1])
+        print('classe coberta: ', *p[1:])
+        p[0] = ('ClassCovered', *p[1:])
     elif p[1][0] == 'NumeredClass':
-         print('classe numerada: ', p[1:])
-         p[0] = ('ClassNumered', p[1])
+         print('classe numerada: ', *p[1:])
+         p[0] = ('ClassNumered', *p[1:])
   
 
 def p_subclass_section(p):
@@ -142,7 +141,7 @@ def p_disjoint_section(p):
 
 def p_disjoint_section_error(p):
     """disjoint_section : error"""
-    print('Erro de sintaxe na declaração de disjoint classes')
+    print('Erro de sintaxe na declaração de disjoint classes', p.value)
 
 def p_identifier_list(p):
     """identifier_list : identifier_list SPECIAL IDENTIFIER
@@ -238,18 +237,63 @@ def p_complex_property_expression_equivalent_to(p):
         print('Analisando uma propriedade complexa', *p[1:])
         p[0] = ('ComplexPropertyExpression', *p[1:])
 
+def p_equivalent_expression_error(p):
+    """equivalent_expression : error"""
+    print('Erro de sintaxe na declaração de expressão de equivalência', p.value)
 
 def p_error(p):
     print("Erro de sintaxe em '%s'" % p.value if p else "EOF")
+    #linha do erro
+    print('linha: ', p.lineno, 'posicao: ', p.lexpos)
 
 # Construtor do parser
 parser = yacc.yacc()
 
-dataTeste = '''
-Class: Spiciness
-EquivalentTo: Hot or Medium or Mild
+dataTestePrimitiva = '''
+ Class: Pizza
+ SubClassOf:
+ hasBase some PizzaBase,
+ hasCaloricContent some xsd:integer
+ DisjointClasses:
+ Pizza, PizzaBase, PizzaTopping
+ Individuals:
+ CustomPizza1,
+ CustomPizza2
 '''
 
-lexer.input(dataTeste)
+dataFechamento = '''Class: MargheritaPizza
+ SubClassOf:
+ NamedPizza,
+ hasTopping some MozzarellaTopping,
+ hasTopping some TomatoTopping,
+ hasTopping only (MozzarellaTopping or TomatoTopping)'''
 
-parser.parse(lexer=lexer)
+dataDefinida = '''Class: CheesyPizza
+ EquivalentTo:
+ Pizza and (hasTopping some CheeseTopping)
+ Individuals:
+ CheesyPizza1'''
+
+dataEnumerada = '''Class: Spiciness
+ EquivalentTo: {Hot , Medium , Mild}'''
+
+dataCoberta = ''' Class: Spiciness
+ EquivalentTo: Hot or Medium or Mild'''
+
+dataErro = '''Class: Pizza
+ SubClassOf:
+ hasBase some PizzaBase
+ DisjointClasses:
+ Pizza, PizzaBase PizzaTopping
+ Individuals:
+ CustomPizza1,
+ CustomPizza2
+'''
+
+datas = [dataTestePrimitiva, dataFechamento, dataDefinida, dataEnumerada, dataCoberta, dataErro]
+
+for data in datas:
+    print('\n\nAnalisando: \n', data)
+    lexer.input(data)
+    parser.parse(lexer=lexer)
+    print('\n\n')

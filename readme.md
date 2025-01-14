@@ -1,43 +1,59 @@
-# Projeto de Compiladores
+# Projeto de Compiladores: Analisador Léxico e Sintático para OWL2 (Manchester Syntax)
 
-## como rodar o projeto?
-1. necessário ter o python instalado com a versão 3.8 ou superior
-2. opcionalmente, criar um ambiente virtual com o comando `python -m venv venv` e ativá-lo com o comando `source venv/bin/activate`
-3. instalar o pacote `ply` com o comando `pip install ply` ou `pip install -r requirements.txt`
-4. rodar o arquivo `owl2lex.py` com o comando `python owl2lex.py`
+Este projeto implementa um analisador léxico e sintático para uma parte da sintaxe Manchester do OWL2, uma linguagem de ontologia. Ele utiliza as bibliotecas `ply` (Python Lex-Yacc) para análise léxica e sintática.
 
-## Especificações do Analisador Léxico para OWL2 (Manchester Syntax)
+## Como Executar o Projeto
 
-### Palavras Reservadas
-- SOME, ALL, VALUE, MIN, MAX, EXACTLY, THAT
-- NOT
-- AND
-- OR
-- Class, EquivalentTo, Individuals, SubClassOf, DisjointClasses (todos sucedidos por “:”, indicando tipos na linguagem OWL)
+1.  **Pré-requisitos:** Certifique-se de ter o Python 3.8 ou superior instalado.
 
-### Identificadores de Classes
-- Nomes começando com letra maiúscula, por exemplo: `Pizza`
-- Nomes compostos concatenados com iniciais maiúsculas, por exemplo: `VegetarianPizza`
-- Nomes compostos separados por underline, por exemplo: `Margherita_Pizza`
+2.  **Ambiente Virtual (Opcional, mas recomendado):**
+    ```bash
+    python -m venv venv        # Cria um ambiente virtual
+    source venv/bin/activate  # Ativa o ambiente (Linux/macOS)
+    venv\Scripts\activate     # Ativa o ambiente (Windows)
+    ```
 
-### Identificadores de Propriedades
-- Começando com “has”, seguidos de uma string simples ou composta, por exemplo: `hasSpiciness`, `hasTopping`, `hasBase`
-- Começando com “is”, seguidos de qualquer coisa, e terminados com “Of”, por exemplo: `isBaseOf`, `isToppingOf`
-- Nomes de propriedades geralmente começam com letra minúscula e são seguidos por qualquer outra sequência de letras, por exemplo: `ssn`, `hasPhone`, `numberOfPizzasPurchased`
+3.  **Instalação de Dependências:**
+    ```bash
+    pip install ply            # Instala o PLY
+    # ou
+    pip install -r requirements.txt # Instala todas as dependências listadas em requirements.txt
+    ```
 
-### Símbolos Especiais
-- Exemplos: `[`, `]`, `{`, `}`, `(`, `)`, `>`, `<`, `,`
+4.  **Execução:**
+    ```bash
+    python owl2lex.py      # Executa o analisador léxico
+    python owl2yacc.py     # Executa o analisador sintático
+    ```
 
-### Nomes de Indivíduos
-- Começando com uma letra maiúscula, seguida de qualquer combinação de letras minúsculas e terminando com um número, por exemplo: `Customer1`, `Waiter2`, `AmericanHotPizza1`
+## Analisador Léxico (`owl2lex.py`)
 
-### Tipos de Dados
-- Identificação de tipos nativos das linguagens OWL, RDF, RDFs ou XML Schema, por exemplo: `owl:real`, `rdfs:domain`, `xsd:string`
+O analisador léxico tokeniza a entrada OWL2 (Manchester Syntax) em unidades léxicas (tokens). Ele reconhece os seguintes elementos:
 
-### Cardinalidades
-- Representadas por números inteiros, por exemplo: `hasTopping min 3`
+*   **Palavras Reservadas:** `SOME`, `ALL`, `VALUE`, `MIN`, `MAX`, `EXACTLY`, `THAT`, `NOT`, `AND`, `OR`, `Class`, `EquivalentTo`, `Individuals`, `SubClassOf`, `DisjointClasses`.
+*   **Identificadores de Classes:** Nomes começando com letra maiúscula (e.g., `Pizza`, `VegetarianPizza`, `Margherita_Pizza`).
+*   **Identificadores de Propriedades:**
+    *   Começando com "has" (e.g., `hasSpiciness`, `hasTopping`).
+    *   Começando com "is" e terminando com "Of" (e.g., `isBaseOf`, `isToppingOf`).
+    *   Outros nomes (e.g., `ssn`, `hasPhone`).
+*   **Símbolos Especiais:** `[`, `]`, `{`, `}`, `(`, `)`, `>`, `<`, `,`.
+*   **Nomes de Indivíduos:** Começando com letra maiúscula e terminando com um número (e.g., `Customer1`, `AmericanHotPizza1`).
+*   **Tipos de Dados:** Tipos nativos de OWL, RDF, RDFS ou XML Schema (e.g., `owl:real`, `rdfs:domain`, `xsd:string`).
+*   **Cardinalidades:** Números inteiros (e.g., `hasTopping min 3`).
 
-### Como funciona a tabela de simbolos?
-- A tabela de simbolos funciona como uma arvore 
-- Cada nó da arvore guarda dados como os sibolos daquele nó, o escopo dele e também os filhos deles, ou seja, os escopos filhos.
+## Analisador Sintático (`owl2yacc.py`)
 
+O analisador sintático recebe os tokens gerados pelo analisador léxico e verifica se a sequência de tokens segue a gramática definida para a sintaxe Manchester do OWL2. Ele implementa as seguintes regras gramaticais (entre outras):
+
+*   **Declaração de Classe:** `Class: <Identificador> <CorpoDaClasse>`
+*   **Corpo da Classe:** Pode ser um corpo primitivo (com subclasses, classes disjuntas e indivíduos), ou um corpo definido (com expressões de equivalência).
+*   **Expressões de Subclasse:** Incluem restrições `SOME`, `ALL`, `VALUE`, `MIN`, `MAX`, `EXACTLY` sobre propriedades.
+*   **Expressões de Equivalência:** Definem classes como equivalentes a outras expressões de classe, usando `AND`, `OR` e outras construções.
+*   **Listas de Identificadores e Indivíduos:** Usadas em declarações de classes disjuntas e indivíduos.
+
+**Estrutura da Árvore Sintática Abstrata (AST):**
+
+O analisador sintático constrói uma Árvore Sintática Abstrata (AST) que representa a estrutura hierárquica do código OWL2 analisado. A AST é representada por tuplas Python, onde o primeiro elemento da tupla é o tipo do nó e os elementos subsequentes são os filhos do nó. Por exemplo, uma declaração de subclasse pode ser representada como:
+
+```python
+('SubClassOf', ('SubClassExpression', 'hasTopping', ('SOME', 'CheeseTopping')))
