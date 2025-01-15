@@ -117,6 +117,7 @@ def p_subclass_expression(p):
                             | PROPERTY MAX INTEGER
                             | PROPERTY EXACTLY INTEGER
                             | PROPERTY SOME TYPE
+                            | PROPERTY ONLY IDENTIFIER
                             | PROPERTY SOME SPECIAL PROPERTY VALUE TYPE SPECIAL
                             | IDENTIFIER
                             | PROPERTY ONLY SPECIAL IDENTIFIER OR IDENTIFIER SPECIAL
