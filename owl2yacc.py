@@ -84,17 +84,41 @@ def p_defined_body(p):
             hasEquivalentExpression = True
         elif p[2][0] == 'EquivalentExpression':
             hasEquivalentExpression = True
-    
-    if hasEquivalentExpression:        
-      print('classe definida: ', *p[1:])
-      p[0] = ('ClassBody', *p[1:])
+    elif p[1][0] == 'EquivalentExpression':
+        hasEquivalentExpression = True
+
+    hasCoveredClass = False
+    if len(p) > 2:
+        if p[1][0] == 'CoveredClass':
+            hasCoveredClass = True
+        elif p[2][0] == 'CoveredClass':
+            hasCoveredClass = True
     elif p[1][0] == 'CoveredClass':
-        print('classe coberta: ', *p[1:])
-        p[0] = ('ClassCovered', *p[1:])
+        hasCoveredClass = True
+    
+    hasNumeredClass = False
+    if len(p) > 2:
+        if p[1][0] == 'NumeredClass':
+            hasNumeredClass = True
+        elif p[2][0] == 'NumeredClass':
+            hasNumeredClass = True
     elif p[1][0] == 'NumeredClass':
-         print('classe numerada: ', *p[1:])
-         p[0] = ('ClassNumered', *p[1:])
-  
+        hasNumeredClass = True
+
+    switcher = {
+        (True, False, False): 'classe definida',
+        (False, True, False): 'classe coberta',
+        (False, False, True): 'classe numerada'
+    }
+
+    switch = switcher[(hasEquivalentExpression, hasCoveredClass, hasNumeredClass)]
+
+    if switch == 'classe definida':
+        p[0] = ('ClassBody', *p[1:])
+    elif switch == 'classe coberta':
+        p[0] = ('ClassCovered', *p[1:])
+    elif switch == 'classe numerada':
+        p[0] = ('ClassNumered', *p[1:])
 
 def p_subclass_section(p):
     """subclass_section : SUBCLASSOF subclass_expressions"""
