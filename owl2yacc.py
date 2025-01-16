@@ -69,9 +69,23 @@ def p_defined_body(p):
                    | equivalent_section disjoint_section
                    | equivalent_section individuals_section
                    | equivalent_section
+                   | subclass_section equivalent_section disjoint_section individuals_section
+                   | subclass_section equivalent_section disjoint_section
+                   | subclass_section equivalent_section individuals_section
+                   | subclass_section equivalent_section
+                   | equivalent_section subclass_section disjoint_section individuals_section
+                   | equivalent_section subclass_section disjoint_section
+                   | equivalent_section subclass_section individuals_section
+                   | equivalent_section subclass_section
                       """
+    hasEquivalentExpression = False
+    if len(p) > 2:
+        if p[1][0] == 'EquivalentExpression':
+            hasEquivalentExpression = True
+        elif p[2][0] == 'EquivalentExpression':
+            hasEquivalentExpression = True
     
-    if p[1][0] == 'EquivalentExpression':        
+    if hasEquivalentExpression:        
       print('classe definida: ', *p[1:])
       p[0] = ('ClassBody', *p[1:])
     elif p[1][0] == 'CoveredClass':
@@ -270,6 +284,9 @@ dataFechamento = '''Class: MargheritaPizza
  hasTopping only (MozzarellaTopping or TomatoTopping)'''
 
 dataDefinida = '''Class: CheesyPizza
+ SubClassOf:
+ hasBase some PizzaBase,
+ hasCaloricContent some xsd:integer
  EquivalentTo:
  Pizza and (hasTopping some CheeseTopping)
  Individuals:
