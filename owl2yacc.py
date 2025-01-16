@@ -27,6 +27,8 @@ def p_class_declaration(p):
         print('\nclasse coberta declarada: \n', p[1], p[2], p[3])
     elif p[3][0] == 'ClassBodyNumered':
         print('\nclasse numerada declarada: \n', p[1], p[2], p[3])
+    elif p[3][0] == 'ClassBodyPrimitiveEnumerated':
+        print('\nclasse primitiva enumerada declarada: \n', p[1], p[2], p[3])
 
 def p_class_body(p):
     """class_body : primitive_body
@@ -37,6 +39,8 @@ def p_class_body(p):
         p[0] = ('ClassBodyPrimitive', p[1:])
     elif p[1][0] == 'primitiveBodyClosure':
         p[0] = ('ClassBodyPrimitiveClosure', p[1:])
+    elif p[1][0] == 'primitiveBodyEnumerated':
+        p[0] = ('ClassBodyPrimitiveEnumerated', p[1:])
     elif p[1][0] == 'ClassBody':
         p[0] = ('ClassBodyDefined', p[1:])
     elif p[1][0] == 'ClassCovered':
@@ -62,6 +66,8 @@ def p_primitive_body(p):
         p[0] = ('primitiveBody', *p[1:])
     elif p[1][0] == 'SubClassOfClosure':
         p[0] = ('primitiveBodyClosure', *p[1:])
+    elif p[1][0] == 'SubClassOfEnumerated':
+        p[0] = ('primitiveBodyEnumerated', *p[1:])
 
 #classe definida
 def p_defined_body(p):
@@ -127,6 +133,8 @@ def p_subclass_section(p):
         if i[0] == 'SubClassExpressionClosure':
             p[0] = ('SubClassOfClosure', *p[2:])
             return
+        elif i[0] == 'SubClassExpressionEnumerated':
+            p[0] = ('SubClassOfEnumerated', *p[2:])
 
     p[0] = ('SubClassOf', *p[2:])
 
@@ -159,13 +167,21 @@ def p_subclass_expression(p):
                             | PROPERTY SOME SPECIAL PROPERTY VALUE TYPE SPECIAL
                             | IDENTIFIER
                             | PROPERTY ONLY SPECIAL IDENTIFIER OR IDENTIFIER SPECIAL
+                            | SPECIAL identifier_list SPECIAL
                             """
     if len(p) == 2:
-        print ('analisado uma subclass_expression de identificador', p[1])
-        p[0] = ('SubClassExpression', p[1])
+            print ('analisado uma subclass_expression de identificador', p[1])
+            p[0] = ('SubClassExpression', p[1])
     elif len(p) == 8:
         print('analisado uma subclass_expression com axioma de fechamento', p[1], p[2], p[3], p[4], p[5], p[6])
         p[0] = ('SubClassExpressionClosure', p[1], p[2], p[3], p[4], p[5], p[6])
+    elif len(p) == 4:
+        if p[2] == 'identifier_list':
+            print ('analisado uma subclass_expression enumerada', *p[1])
+            p[0] = ('SubClassExpressionEnumerated', p[1])
+        else:
+            print('analisado uma subclass_expression', p[1], p[2], p[3])
+            p[0] = ('SubClassExpression', p[1], p[2:])
     else:
         print('analisado uma subclass_expression', p[1], p[2], p[3])
         p[0] = ('SubClassExpression', p[1], p[2:])   
