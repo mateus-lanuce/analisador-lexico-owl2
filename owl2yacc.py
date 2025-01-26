@@ -12,6 +12,13 @@ precedence = (
     ('left', 'SOME', 'ALL', 'VALUE', 'MIN', 'MAX', 'EXACTLY', 'THAT', 'NOT'),
 )
 
+def showError(error, line, pos = None):
+    print('\033[91m' + error + '\033[0m')
+    print('\033[91m]' + 'linha: ' + str(line) + '\033[0m')
+
+    if pos:
+        print('\033[91m]' + 'posicao: ' + str(pos) + '\033[0m')
+
 # Regras da gramática
 def p_class_declaration(p):
     """class_declaration : CLASS IDENTIFIER class_body"""
@@ -58,7 +65,6 @@ def p_class_body_error(p):
 def p_primitive_body(p):
     """primitive_body : subclass_section disjoint_section individuals_section
                    | subclass_section disjoint_section
-                   | subclass_section individuals_section
                    | subclass_section
                       """
 
@@ -73,15 +79,9 @@ def p_primitive_body(p):
 def p_defined_body(p):
     """defined_body : equivalent_section disjoint_section individuals_section
                    | equivalent_section disjoint_section
-                   | equivalent_section individuals_section
                    | equivalent_section
-                   | subclass_section equivalent_section disjoint_section individuals_section
-                   | subclass_section equivalent_section disjoint_section
-                   | subclass_section equivalent_section individuals_section
-                   | subclass_section equivalent_section
                    | equivalent_section subclass_section disjoint_section individuals_section
                    | equivalent_section subclass_section disjoint_section
-                   | equivalent_section subclass_section individuals_section
                    | equivalent_section subclass_section
                       """
     hasEquivalentExpression = False
@@ -132,11 +132,41 @@ def p_subclass_section(p):
     for i in p[2]:
         if i[0] == 'SubClassExpressionClosure':
             p[0] = ('SubClassOfClosure', *p[2:])
-            return
         elif i[0] == 'SubClassExpressionEnumerated':
             p[0] = ('SubClassOfEnumerated', *p[2:])
 
+    #analise da precedencia dos operadores
+    if p[0]:
+        if p[0][0] == 'SubClassOfClosure':
+            try :
+                verifyPrecedence(p[0][1])
+            except:
+                showError('Erro de precedencia na declaração de subclasse', p.lineno(1))
+
     p[0] = ('SubClassOf', *p[2:])
+
+# Trecho da ontologia de pizzas: neste caso, o axioma de fechamento para
+# a propriedade hasTopping (que restringe as imagens da propriedade às classes
+# MozzarellaTopping ou TomatoTopping) só pode aparecer depois que as duas triplas
+# existenciais (com o operador some) forem declaradas
+def verifyPrecedence(p):
+    classBeforeOnly = []
+
+    #verificar se a SubClassExpressionClosure é a ultima expressao, disparar erro
+    if p[-1][0] == 'SubClassExpression':
+        raise Exception()
+
+    for i in p:
+        if i[0] == 'SubClassExpression' and len(i) > 2:
+            if i[2][0] == 'some':
+                classBeforeOnly.append(i[2][1])
+
+    dataInsideOnly = p[-1]
+
+    #verificar se todas as strings de classBeforeOnly estão contidas em dataInsideOnly
+    for i in classBeforeOnly:
+        if i not in dataInsideOnly:
+            raise Exception()
 
 def p_subclass_section_error(p):
     """subclass_section : error"""
@@ -170,20 +200,15 @@ def p_subclass_expression(p):
                             | SPECIAL identifier_list SPECIAL
                             """
     if len(p) == 2:
-            print ('analisado uma subclass_expression de identificador', p[1])
             p[0] = ('SubClassExpression', p[1])
     elif len(p) == 8:
-        print('analisado uma subclass_expression com axioma de fechamento', p[1], p[2], p[3], p[4], p[5], p[6])
         p[0] = ('SubClassExpressionClosure', p[1], p[2], p[3], p[4], p[5], p[6])
     elif len(p) == 4:
         if p[2] == 'identifier_list':
-            print ('analisado uma subclass_expression enumerada', *p[1])
             p[0] = ('SubClassExpressionEnumerated', p[1])
         else:
-            print('analisado uma subclass_expression', p[1], p[2], p[3])
             p[0] = ('SubClassExpression', p[1], p[2:])
     else:
-        print('analisado uma subclass_expression', p[1], p[2], p[3])
         p[0] = ('SubClassExpression', p[1], p[2:])   
 
 def p_subclass_expression_error(p):
@@ -284,6 +309,7 @@ def p_equivalent_expression(p):
 def p_complex_property_expression_equivalent_to(p):
     """complex_property_expression : PROPERTY SOME IDENTIFIER
                                       | PROPERTY SOME SPECIAL PROPERTY VALUE IDENTIFIER SPECIAL
+                                      | number_complex_expression
                                       """
     if len(p) == 8:
        print('Analisando uma propriedade complexa aninhada', *p[1:])
@@ -292,14 +318,26 @@ def p_complex_property_expression_equivalent_to(p):
         print('Analisando uma propriedade complexa', *p[1:])
         p[0] = ('ComplexPropertyExpression', *p[1:])
 
+def p_number_complex_expression(p):
+    """number_complex_expression : PROPERTY MIN INTEGER IDENTIFIER
+                                    | PROPERTY MAX INTEGER IDENTIFIER
+                                    | PROPERTY EXACTLY INTEGER IDENTIFIER
+                                    | PROPERTY MIN INTEGER TYPE
+                                    | PROPERTY MAX INTEGER TYPE
+                                    | PROPERTY EXACTLY INTEGER TYPE
+                                    """
+    p[0] = p[1:]
+
+def p_number_complex_expression_error(p):
+    """number_complex_expression : error"""
+    showError('Erro de sintaxe na declaração de expressão de operador numérico', p.lineno, p.lexpos)
+
 def p_equivalent_expression_error(p):
     """equivalent_expression : error"""
     print('Erro de sintaxe na declaração de expressão de equivalência', p.value)
 
 def p_error(p):
-    print("Erro de sintaxe em '%s'" % p.value if p else "EOF")
-    #linha do erro
-    print('linha: ', p.lineno, 'posicao: ', p.lexpos)
+    showError('Erro de sintaxe em %s' % p.value if p else 'EOF', p.lineno, p.lexpos)
 
 # Construtor do parser
 parser = yacc.yacc()
@@ -348,7 +386,38 @@ dataErro = '''Class: Pizza
  CustomPizza2
 '''
 
-datas = [dataTestePrimitiva, dataFechamento, dataDefinida, dataEnumerada, dataCoberta, dataErro]
+dataPrecedencia1 = '''Class: MargheritaPizza
+SubClassOf:
+NamedPizza,
+hasTopping some MozzarellaTopping,
+hasTopping some TomatoTopping,
+hasTopping only (MozzarellaTopping or TomatoTopping)
+DisjointClasses:
+Pizza, PizzaBase, PizzaTopping
+Individuals:
+MargheritaPizza1,
+MargheritaPizza2
+'''
+
+dataPrecedenciaErro = '''Class: MargheritaPizza
+SubClassOf:
+NamedPizza,
+hasTopping only (MozzarellaTopping or TomatoTopping),
+hasTopping some MozzarellaTopping,
+hasTopping some TomatoTopping
+DisjointClasses:
+Pizza, PizzaBase, PizzaTopping
+Individuals:
+MargheritaPizza1,
+MargheritaPizza2
+'''
+
+dataVerifyTipo = '''Class: InterestingPizza
+EquivalentTo:
+Pizza
+and (hasTopping min 3 PizzaTopping)'''
+
+datas = [dataVerifyTipo]
 
 for data in datas:
     print('\n\nAnalisando: \n', data)
