@@ -13,11 +13,13 @@ precedence = (
 )
 
 def showError(error, line, pos = None):
-    print('\033[91m' + error + '\033[0m')
-    print('\033[91m]' + 'linha: ' + str(line) + '\033[0m')
+    print('\033[91m' + error + ' linha: ' + str(line) + '\033[0m')
 
     if pos:
-        print('\033[91m]' + 'posicao: ' + str(pos) + '\033[0m')
+        print('\033[91m' + 'posicao: ' + str(pos) + '\033[0m')
+
+def showInfo(info):
+    print('\033[94m' + info + '\033[0m')
 
 # Regras da gramática
 def p_class_declaration(p):
@@ -141,7 +143,7 @@ def p_subclass_section(p):
             try :
                 verifyPrecedence(p[0][1])
             except:
-                showError('Erro de precedencia na declaração de subclasse', p.lineno(1))
+                showError('Erro Semantico: precedencia na declaração de subclasse', p.lineno(1))
 
     p[0] = ('SubClassOf', *p[2:])
 
@@ -186,13 +188,13 @@ def p_subclass_expressions_error(p):
     print('Erro de sintaxe na declaração de expressão de subclasse')
 
 def p_subclass_expression(p):
-    """subclass_expression : PROPERTY SOME IDENTIFIER
+    """subclass_expression : object_property_expression
                             | PROPERTY ALL IDENTIFIER
                             | PROPERTY VALUE IDENTIFIER
                             | PROPERTY MIN INTEGER
                             | PROPERTY MAX INTEGER
                             | PROPERTY EXACTLY INTEGER
-                            | PROPERTY SOME TYPE
+                            | data_property_expression
                             | PROPERTY ONLY IDENTIFIER
                             | PROPERTY SOME SPECIAL PROPERTY VALUE TYPE SPECIAL
                             | IDENTIFIER
@@ -214,6 +216,27 @@ def p_subclass_expression(p):
 def p_subclass_expression_error(p):
     """subclass_expression : error"""
     print('Erro de sintaxe na declaração de subclasse') 
+
+def p_object_property_expression(p):
+    """object_property_expression : PROPERTY SOME IDENTIFIER
+                                  """
+    
+    showInfo('Analisando uma expressao de propriedade de objeto')
+    showInfo(p[1] + ' é uma propriedade de objeto -> classe: ' + p[3]) 
+    p[0] = ('ObjectPropertyExpression', *p[1:])
+
+def p_object_property_expression_error(p):
+    """object_property_expression : error"""
+    showError('Erro de sintaxe na declaração de expressão de propriedade de objeto', p.lineno, p.lexpos)
+
+def p_data_property_expression(p):
+    """data_property_expression : PROPERTY SOME TYPE
+                               """
+    p[0] = ('DataPropertyExpression', *p[1:])
+
+def p_data_property_expression_error(p):
+    """data_property_expression : error"""
+    showError('Erro de sintaxe na declaração de expressão de propriedade de dados', p.lineno, p.lexpos)
 
 def p_disjoint_section(p):
     """disjoint_section : DISJOINTCLASSES identifier_list"""
@@ -291,31 +314,25 @@ def p_equivalent_expression(p):
                                """
     
     if len(p) == 6 and p[2] == 'and':
-        print('Analisando uma expressao de classe definida: ', *p[1:])
         p[0] = ('EquivalentExpression', *p[1:])
 
         if p[4][0] == 'ComplexPropertyExpressionAninhada':
-            print('Analisando uma expressao de classe aninhada: ', *p[4])
             p[0] = ('EquivalentExpressionAninhada', *p[1:])
         
     elif len(p) == 4:
-        print('Analisando uma classe numerada: ')
         p[0] = ('EquivalentoNumeredClass', *p[1:])
         
     elif len(p) == 6 and p[2] == 'or':
-        print('Analisando uma classe coberta: ')
         p[0] = ('EquivalentoCoveredClass', *p[1:])
 
 def p_complex_property_expression_equivalent_to(p):
-    """complex_property_expression : PROPERTY SOME IDENTIFIER
+    """complex_property_expression : object_property_expression
                                       | PROPERTY SOME SPECIAL PROPERTY VALUE IDENTIFIER SPECIAL
                                       | number_complex_expression
                                       """
     if len(p) == 8:
-       print('Analisando uma propriedade complexa aninhada', *p[1:])
        p[0] = ('ComplexPropertyExpressionAninhada', *p[1:])
     else:
-        print('Analisando uma propriedade complexa', *p[1:])
         p[0] = ('ComplexPropertyExpression', *p[1:])
 
 def p_number_complex_expression(p):
@@ -326,6 +343,7 @@ def p_number_complex_expression(p):
                                     | PROPERTY MAX INTEGER TYPE
                                     | PROPERTY EXACTLY INTEGER TYPE
                                     """
+    showInfo('Analisando uma expressao de propriedade numerica com ' + p[2] + ' ' + str(p[3]))
     p[0] = p[1:]
 
 def p_number_complex_expression_error(p):
@@ -386,7 +404,7 @@ dataErro = '''Class: Pizza
  CustomPizza2
 '''
 
-dataPrecedencia1 = '''Class: MargheritaPizza
+dataPrecedenciaSobrecarregamento = ['''Class: MargheritaPizza
 SubClassOf:
 NamedPizza,
 hasTopping some MozzarellaTopping,
@@ -397,9 +415,9 @@ Pizza, PizzaBase, PizzaTopping
 Individuals:
 MargheritaPizza1,
 MargheritaPizza2
-'''
+''', 'Data com precedencia correta e sobrecarregamento']
 
-dataPrecedenciaErro = '''Class: MargheritaPizza
+dataPrecedenciaErro = ['''Class: MargheritaPizza
 SubClassOf:
 NamedPizza,
 hasTopping only (MozzarellaTopping or TomatoTopping),
@@ -410,17 +428,32 @@ Pizza, PizzaBase, PizzaTopping
 Individuals:
 MargheritaPizza1,
 MargheritaPizza2
-'''
+''', 'Data com precedencia incorreta e sobrecarregamento']
 
-dataVerifyTipo = '''Class: InterestingPizza
+dataVerifyTipoCoercao = ['''Class: InterestingPizza
 EquivalentTo:
 Pizza
-and (hasTopping min 3 PizzaTopping)'''
+and (hasTopping min 3 PizzaTopping)''', 'Data com coerção']
 
-datas = [dataVerifyTipo]
+dataSobrecarregamento = '''Class: EvaluationFacility 
+SubClassOf:  
+    IntermediaryParticipant, 
+    emitsReport some EvaluationReport, 
+    mediates some EvaluationAct 
+'''
+
+datas = [dataPrecedenciaSobrecarregamento, dataPrecedenciaErro, dataVerifyTipoCoercao]
 
 for data in datas:
-    print('\n\nAnalisando: \n', data)
-    lexer.input(data)
-    parser.parse(lexer=lexer)
-    print('\n\n')
+    if type(data) == list:
+        #print amarelo
+        print('\033[93m' + 'Analisando: ' + data[1] + '\033[0m')
+        print(data[0])
+        lexer.input(data[0])
+        parser.parse(lexer=lexer)
+        print('\n\n')
+    else:
+        print('\n\nAnalisando: \n', data)
+        lexer.input(data)
+        parser.parse(lexer=lexer)
+        print('\n\n')
