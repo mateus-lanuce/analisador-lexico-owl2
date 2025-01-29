@@ -57,3 +57,8 @@ O analisador sintático constrói uma Árvore Sintática Abstrata (AST) que repr
 
 ```python
 ('SubClassOf', ('SubClassExpression', 'hasTopping', ('SOME', 'CheeseTopping')))
+```
+
+## Analisador Semantico
+
+O analisador semantico opera "em cima" do analisador sintático fazendo as verificações semanticas como por exemplo a precedência das palavras chaves
